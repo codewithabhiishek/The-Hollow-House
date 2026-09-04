@@ -572,6 +572,10 @@ export default function App() {
                       </>
                     )}
                   </div>
+
+                  <div className="pt-2 text-center text-[10px] font-mono tracking-[0.22em] text-[#e8e0cf]/35 uppercase">
+                    Built by Abhishek &nbsp;·&nbsp; <span className="text-[#c1121f]/80">blame him.</span>
+                  </div>
                 </div>
 
               </div>

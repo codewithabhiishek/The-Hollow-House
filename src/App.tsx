@@ -374,123 +374,319 @@ export default function App() {
     >
       {/* ================= TITLE ================= */}
       {screen === 'title' && (
-        <div className="absolute inset-0 z-10 overflow-hidden">
-          <img src={IMG.hallway} alt="" draggable={false} onError={hideOnError} className="kenburns absolute inset-0 h-full w-full object-cover opacity-40" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#050506] via-[#050506]/72 to-[#050506]/30" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#050506] via-transparent to-[#050506]/70" />
-          <div className="fog fog-a" />
-          <div className="fog fog-b" />
-
-          <div className="pointer-events-none absolute right-[4%] top-[12%] hidden h-[72%] w-[34%] lg:block">
-            {[
-              { src: IMG.nursery, cap: 'the nursery — do not touch the doll', cls: 'right-[6%] top-0 w-[58%] rotate-[5deg]' },
-              { src: IMG.chapel, cap: 'her altar. the candles are hers', cls: 'left-0 top-[24%] w-[56%] -rotate-[7deg]' },
-              { src: IMG.basement, cap: 'where they put him. he knocks', cls: 'right-0 top-[52%] w-[60%] rotate-[3deg]' },
-            ].map((p) => (
-              <figure key={p.cap} className={`pointer-events-auto absolute ${p.cls} bg-[#e8e0cf] p-2 pb-7 shadow-[0_18px_50px_rgba(0,0,0,0.8)] transition-transform duration-500 hover:z-20 hover:rotate-0 hover:scale-[1.04]`}>
-                <img src={p.src} alt={p.cap} draggable={false} onError={hideCardOnError} className="aspect-[16/10] w-full object-cover grayscale-[35%]" />
-                <figcaption className="absolute bottom-1.5 left-2 right-2 truncate font-display text-[13px] text-[#3a2020]">{p.cap}</figcaption>
-              </figure>
-            ))}
+        <div className="relative h-screen w-full select-none overflow-y-auto no-scrollbar bg-[#050506]">
+          {/* Atmospheric Environmental Backdrop */}
+          <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+            <img
+              src={IMG.hallway}
+              alt=""
+              draggable={false}
+              onError={hideOnError}
+              className="kenburns absolute inset-0 h-full w-full object-cover opacity-28 grayscale-[25%]"
+            />
+            {/* Cinematic Gradient Masks */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#050506] via-[#050506]/92 to-[#050506]/55" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#050506] via-transparent to-[#050506]/85" />
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{ background: 'radial-gradient(ellipse at 25% 40%, rgba(193,18,31,0.08) 0%, transparent 65%)' }}
+            />
+            <div className="fog fog-a" />
+            <div className="fog fog-b" />
+            <div className="grain absolute inset-0 pointer-events-none" />
+            <div className="vignette absolute inset-0 pointer-events-none" />
           </div>
 
-          <div className="relative z-10 flex h-full flex-col justify-center px-6 sm:px-12 lg:px-20">
-            <div className="fade-up max-w-2xl">
-              <p className="mb-4 flex items-center gap-3 text-[11px] uppercase tracking-[0.45em] text-[#c1121f]">
-                <GhostIcon /> Evidence file 1889-HH &nbsp;//&nbsp; condemned
-              </p>
-              <h1
-                className="font-display title-flicker text-[16vw] leading-[0.9] text-[#c1121f] sm:text-8xl lg:text-[7rem]"
-                style={{ textShadow: '0 0 40px rgba(193,18,31,0.55), 0 0 120px rgba(193,18,31,0.25)' }}
-              >
-                The Hollow<br />House
-              </h1>
-              <p className="mt-6 max-w-xl text-sm leading-relaxed text-[#e8e0cf]/75 sm:text-base">
-                A first-person haunted-house survival game. Walk the halls yourself — WASD or hold the mouse button to move,
-                drag to look, E or click to interact. Seven rites stand between you and the front door, and <em className="text-[#c1121f] not-italic">she</em> stands
-                between you and everything else. She wanders. She stalks. She lunges.
-              </p>
-            </div>
-
-            <div className="fade-up mt-8 grid max-w-2xl gap-6 sm:grid-cols-[1fr_auto] sm:items-end" style={{ animationDelay: '0.2s' }}>
-              <div className="max-w-sm border border-[#e8e0cf]/15 bg-black/55 p-4">
-                <p className="mb-2 text-[10px] uppercase tracking-[0.3em] text-[#c1121f]">Warnings posted by order of the county</p>
-                <ul className="space-y-1.5 text-xs text-[#e8e0cf]/70">
-                  {['Sudden, loud, synthesized horror audio', 'Full-screen jumpscares with a realistic ghost', 'Flashing lights — play in the dark, with headphones', 'The minimap shows her. Watching it does not stop her.'].map((w) => (
-                    <li key={w} className="flex gap-2"><span className="text-[#c1121f]">†</span>{w}</li>
-                  ))}
-                </ul>
+          {/* Top Archival Header Bar */}
+          <header className="relative z-10 w-full border-b border-[#e8e0cf]/10 bg-[#050506]/80 backdrop-blur-md px-4 sm:px-8 py-2.5">
+            <div className="max-w-7xl mx-auto flex items-center justify-between text-[10px] sm:text-[11px] font-mono tracking-[0.25em] text-[#e8e0cf]/50 uppercase">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#c1121f] animate-pulse" />
+                <span className="text-[#c1121f] font-semibold">CASE ARCHIVE // 1889-HH</span>
+                <span className="hidden md:inline text-[#e8e0cf]/25">|</span>
+                <span className="hidden md:inline">BLACK RIVER PARISH CORONER</span>
               </div>
+              <div className="flex items-center gap-4 text-[9px] sm:text-[10px] text-[#e8e0cf]/40">
+                <span className="hidden sm:inline">CONDEMNED STRUCTURE</span>
+                <span className="text-[#c1121f]/90 border border-[#c1121f]/40 px-1.5 py-0.5 bg-[#c1121f]/10">LEVEL IV HAZARD</span>
+              </div>
+            </div>
+          </header>
 
-              <div className="flex flex-col gap-3">
-                <label className="flex cursor-pointer items-start gap-3 text-xs leading-snug text-[#e8e0cf]/70">
+          {/* Main Stage: Controlled Asymmetric Grid */}
+          <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 py-6 sm:py-10 lg:py-14 pb-24 sm:pb-28">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 xl:gap-16 items-start lg:items-center">
+
+              {/* ================= LEFT / PRIMARY DOSSIER COLUMN ================= */}
+              <div className="lg:col-span-7 xl:col-span-7 w-full max-w-xl mx-auto lg:mx-0 flex flex-col fade-up">
+                
+                {/* 1. Evidence Header */}
+                <div className="flex items-center gap-2.5 text-[10px] sm:text-[11px] uppercase tracking-[0.35em] text-[#c1121f] font-mono mb-2">
+                  <GhostIcon size={13} />
+                  <span>COUNTY EVIDENCE DOSSIER</span>
+                  <span className="text-[#e8e0cf]/30">/</span>
+                  <span className="text-[#e8e0cf]/60">ENTRY PROHIBITED</span>
+                </div>
+
+                {/* 2. Hero Title: The Hollow House */}
+                <h1
+                  className="font-display title-flicker text-5xl sm:text-6xl md:text-7xl xl:text-[5.4rem] leading-[0.92] text-[#c1121f] tracking-wide my-1"
+                  style={{
+                    textShadow: '0 0 35px rgba(193,18,31,0.55), 0 4px 14px rgba(0,0,0,0.95), 0 0 85px rgba(193,18,31,0.25)',
+                  }}
+                >
+                  The Hollow<br />House
+                </h1>
+
+                {/* 3. Subtitle & Atmospheric Logline */}
+                <div className="mt-2 sm:mt-3 space-y-2">
+                  <p className="text-[11px] sm:text-xs uppercase tracking-[0.25em] text-[#e8e0cf]/65 font-mono">
+                    A FIRST-PERSON PSYCHOLOGICAL HORROR EXPERIENCE
+                  </p>
+                  <p className="text-xs sm:text-sm leading-relaxed text-[#e8e0cf]/75 font-body">
+                    Walk the abandoned halls yourself. Seven rites stand between you and the front door, and <span className="text-[#c1121f] font-semibold not-italic">she</span> stands between you and everything else. She wanders. She stalks. She lunges.
+                  </p>
+                </div>
+
+                {/* 4. Warning / Inquest Notice Panel (Consistent Column Width) */}
+                <div className="mt-5 w-full border border-[#c1121f]/35 bg-[#08080c]/90 backdrop-blur-sm p-4 relative shadow-[0_8px_30px_rgba(0,0,0,0.7)]">
+                  <div className="absolute top-0 right-0 px-2 py-0.5 bg-[#c1121f]/20 border-b border-l border-[#c1121f]/40 text-[8px] uppercase tracking-[0.2em] text-[#c1121f] font-mono">
+                    ADVISORY
+                  </div>
+                  <p className="text-[10px] uppercase tracking-[0.25em] text-[#c1121f] font-mono font-semibold mb-2.5 flex items-center gap-1.5">
+                    <span>WARNINGS POSTED BY ORDER OF THE COUNTY</span>
+                  </p>
+                  <ul className="space-y-1.5 text-[11px] sm:text-xs text-[#e8e0cf]/70 font-body">
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-[#c1121f] font-bold text-[13px] leading-none select-none">†</span>
+                      <span>Sudden, loud, synthesized horror audio (headphones required).</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-[#c1121f] font-bold text-[13px] leading-none select-none">†</span>
+                      <span>Full-screen jumpscares with an unrelenting, adaptive apparition.</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-[#c1121f] font-bold text-[13px] leading-none select-none">†</span>
+                      <span>Flashing light phenomena — recommended in complete darkness.</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-[#c1121f] font-bold text-[13px] leading-none select-none">†</span>
+                      <span>The minimap shows her presence. Watching it will not stop her.</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* 5. Player Acknowledgement (Consistent Column Width) */}
+                <label className="mt-4 w-full flex cursor-pointer items-start gap-3 text-xs leading-snug text-[#e8e0cf]/75 hover:text-[#e8e0cf] transition-colors group">
                   <input
                     type="checkbox"
                     checked={consent}
                     onChange={(e) => setConsent(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer appearance-none border border-[#c1121f]/70 bg-black transition-colors checked:bg-[#c1121f]"
+                    className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer appearance-none border border-[#c1121f]/70 bg-black transition-colors checked:bg-[#c1121f] group-hover:border-[#c1121f]"
                   />
-                  <span>I understand that whatever hears me tonight may follow me home, and that my heart is my own responsibility.</span>
+                  <span className="select-none font-body">
+                    I understand that whatever hears me tonight may follow me home, and that my heart is my own responsibility.
+                  </span>
                 </label>
 
-                {/* difficulty */}
-                <div>
-                  <p className="mb-2 text-[10px] uppercase tracking-[0.3em] text-[#e8e0cf]/50">Choose your light</p>
-                  <div className="grid grid-cols-3 gap-2">
+                {/* 6. Light Selection (Consistent Column Width & Uniform Cards) */}
+                <div className="mt-5 w-full">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] uppercase tracking-[0.25em] text-[#e8e0cf]/50 font-mono">
+                      CHOOSE YOUR LIGHT
+                    </p>
+                    <span className="text-[9px] uppercase tracking-[0.15em] text-[#c1121f]/90 font-mono">
+                      {diff === 'lantern' ? '• INTENDED CHALLENGE' : diff === 'candle' ? '• MERCIFUL PASSAGE' : '• TOTAL NIGHTMARE'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2.5 w-full">
                     {(Object.keys(DIFFS) as Difficulty[]).map((d) => {
                       const active = diff === d;
                       return (
                         <button
                           key={d}
+                          type="button"
                           onClick={() => setDiff(d)}
-                          className={`group border px-2 py-2.5 text-left transition-all duration-200 ${
+                          className={`group relative flex flex-col justify-between p-2.5 sm:p-3 text-left border transition-all duration-200 cursor-pointer min-h-[78px] sm:min-h-[86px] ${
                             active
-                              ? 'border-[#c1121f] bg-[#c1121f]/15 shadow-[0_0_24px_rgba(193,18,31,0.35)]'
-                              : 'border-[#e8e0cf]/15 bg-black/50 hover:border-[#e8e0cf]/40'
+                              ? 'border-[#c1121f] bg-[#c1121f]/15 shadow-[0_0_20px_rgba(193,18,31,0.25)] ring-1 ring-[#c1121f]/60'
+                              : 'border-[#e8e0cf]/15 bg-black/60 hover:border-[#e8e0cf]/35 hover:bg-black/80'
                           }`}
                         >
-                          <span className={`flex items-center gap-1.5 text-[11px] uppercase tracking-[0.15em] ${active ? 'text-[#e8e0cf]' : 'text-[#e8e0cf]/60'}`}>
-                            <CandleIcon lit={active} />
-                            {DIFFS[d].label}
-                          </span>
-                          <span className="mt-1 block text-[9px] leading-snug text-[#e8e0cf]/45">{DIFFS[d].blurb}</span>
+                          <div>
+                            <div className="flex items-center justify-between gap-1 mb-1">
+                              <span className={`flex items-center gap-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.15em] font-mono font-bold ${active ? 'text-[#e8e0cf]' : 'text-[#e8e0cf]/65'}`}>
+                                <CandleIcon lit={active} />
+                                {DIFFS[d].label}
+                              </span>
+                              {d === 'lantern' && (
+                                <span className={`text-[7px] uppercase tracking-wider px-1 py-0.2 border ${active ? 'border-[#c1121f] text-[#ff9e4a]' : 'border-white/10 text-white/40'}`}>
+                                  STD
+                                </span>
+                              )}
+                            </div>
+                            <span className="block text-[9px] sm:text-[10px] leading-tight text-[#e8e0cf]/50 font-body">
+                              {DIFFS[d].blurb}
+                            </span>
+                          </div>
+                          {active && (
+                            <div className="w-full h-0.5 bg-[#c1121f] mt-2 shadow-[0_0_8px_rgba(193,18,31,0.8)]" />
+                          )}
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                <button
-                  onClick={() => {
-                    horror.initAudio();
-                    horror.whisper();
-                    setIntroIdx(0);
-                    setScreen('intro');
-                  }}
-                  disabled={!consent}
-                  className={`flex items-center justify-center gap-3 border-2 px-8 py-4 text-sm uppercase tracking-[0.3em] transition-all duration-300 ${
-                    consent
-                      ? 'border-[#c1121f] bg-[#c1121f]/10 text-[#e8e0cf] hover:bg-[#c1121f] hover:text-[#050506] hover:shadow-[0_0_50px_rgba(193,18,31,0.6)]'
-                      : 'cursor-not-allowed border-[#e8e0cf]/15 text-[#e8e0cf]/30'
-                  }`}
-                >
-                  <CandleIcon lit={consent} /> Enter the house
-                </button>
-                <p className="text-right text-[10px] tracking-[0.2em] text-[#e8e0cf]/40">
-                  <span className="tabular-nums text-[#c1121f]/80">{souls.toLocaleString()}</span> souls have entered&nbsp;&nbsp;·&nbsp;&nbsp;1 escaped
-                  {best !== null && <>
-                    &nbsp;&nbsp;·&nbsp;&nbsp;fastest escape <span className="tabular-nums text-[#7a8b6f]">{fmt(best)}</span>
-                  </>}
-                </p>
-              </div>
-            </div>
-          </div>
+                {/* 7. Primary Action: ENTER THE HOUSE */}
+                <div className="mt-5 w-full space-y-2">
+                  <button
+                    onClick={() => {
+                      horror.initAudio();
+                      horror.whisper();
+                      setIntroIdx(0);
+                      setScreen('intro');
+                    }}
+                    disabled={!consent}
+                    className={`group relative w-full flex items-center justify-center gap-3 border-2 py-3.5 sm:py-4 px-6 text-xs sm:text-sm uppercase tracking-[0.3em] font-mono transition-all duration-300 ${
+                      consent
+                        ? 'border-[#c1121f] bg-[#c1121f]/15 text-[#e8e0cf] shadow-[0_0_30px_rgba(193,18,31,0.3)] hover:bg-[#c1121f] hover:text-[#050506] hover:shadow-[0_0_55px_rgba(193,18,31,0.7)] active:scale-[0.99] cursor-pointer'
+                        : 'cursor-not-allowed border-[#e8e0cf]/15 bg-black/40 text-[#e8e0cf]/30'
+                    }`}
+                  >
+                    <CandleIcon lit={consent} />
+                    <span className="font-bold">ENTER THE HOUSE</span>
+                    <span className="transition-transform duration-300 group-hover:translate-x-1.5">→</span>
+                  </button>
 
-          <div className="absolute bottom-0 left-0 right-0 z-10 overflow-hidden border-t border-[#c1121f]/25 bg-black/70 py-2">
-            <div className="marquee whitespace-nowrap text-[11px] tracking-[0.35em] text-[#c1121f]/80">
-              <span>{TICKER}</span><span>{TICKER}</span>
+                  <div className="flex items-center justify-between text-[9px] sm:text-[10px] tracking-[0.15em] text-[#e8e0cf]/45 font-mono px-1">
+                    <span>
+                      <span className="tabular-nums text-[#c1121f] font-semibold">{souls.toLocaleString()}</span> SOULS ENTERED
+                    </span>
+                    <span>·</span>
+                    <span className="text-[#e8e0cf]/65">1 ESCAPED</span>
+                    {best !== null && (
+                      <>
+                        <span>·</span>
+                        <span>RECORD: <span className="tabular-nums text-[#7a8b6f] font-semibold">{fmt(best)}</span></span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* ================= RIGHT / COHESIVE EVIDENCE BOARD ================= */}
+              <div className="lg:col-span-5 xl:col-span-5 w-full max-w-xl mx-auto lg:mx-0">
+                {/* Board Container */}
+                <div className="relative border border-[#c1121f]/20 bg-[#08080c]/70 backdrop-blur-sm p-4 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.85)]">
+                  {/* Decorative Corner Brackets */}
+                  <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-[#c1121f]/60" />
+                  <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-[#c1121f]/60" />
+                  <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-[#c1121f]/60" />
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-[#c1121f]/60" />
+
+                  {/* Evidence Board Header */}
+                  <div className="flex items-center justify-between border-b border-[#e8e0cf]/10 pb-3 mb-5 text-[10px] font-mono uppercase tracking-[0.2em]">
+                    <span className="text-[#e8e0cf]/60 flex items-center gap-1.5">
+                      <span className="text-[#c1121f]">■</span> EXHIBIT RECOVERY BOARD
+                    </span>
+                    <span className="text-[#c1121f] border border-[#c1121f]/40 px-1.5 py-0.5 text-[8px] tracking-widest bg-[#c1121f]/10">
+                      FORENSIC LOG
+                    </span>
+                  </div>
+
+                  {/* Intentional Evidence Photographs Composition */}
+                  <div className="relative space-y-4 sm:space-y-5">
+                    {/* Primary Hero Photograph */}
+                    <figure className="relative bg-[#e8e0cf] p-2.5 pb-8 shadow-[0_16px_35px_rgba(0,0,0,0.85)] border border-[#d6cebe] transition-all duration-300 hover:scale-[1.02] hover:z-20 hover:shadow-[0_20px_45px_rgba(193,18,31,0.25)] -rotate-[1deg]">
+                      {/* Red Evidence Pin */}
+                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-[#c1121f] border-2 border-black/80 shadow-[0_3px_6px_rgba(0,0,0,0.9)] z-10 flex items-center justify-center">
+                        <div className="w-1 h-1 rounded-full bg-white/70" />
+                      </div>
+                      <div className="relative overflow-hidden aspect-[16/9] w-full bg-[#121215]">
+                        <img
+                          src={IMG.nursery}
+                          alt="The Nursery"
+                          draggable={false}
+                          onError={hideCardOnError}
+                          className="h-full w-full object-cover grayscale-[30%] contrast-[110%]"
+                        />
+                        <div className="absolute top-2 right-2 bg-black/75 px-1.5 py-0.5 border border-[#c1121f]/50 text-[8px] font-mono uppercase tracking-widest text-[#e8e0cf]">
+                          EX-01 · NURSERY
+                        </div>
+                      </div>
+                      <figcaption className="absolute bottom-1.5 left-2.5 right-2.5 truncate font-display text-[13px] sm:text-[14px] text-[#2c1414] tracking-wide">
+                        the nursery — do not touch the doll
+                      </figcaption>
+                    </figure>
+
+                    {/* Dual Supporting Photographs with Controlled Offset */}
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-1">
+                      {/* Secondary Photo: Chapel */}
+                      <figure className="relative bg-[#e8e0cf] p-2 pb-7 shadow-[0_12px_30px_rgba(0,0,0,0.8)] border border-[#d6cebe] transition-all duration-300 hover:scale-[1.03] hover:rotate-0 hover:z-20 hover:shadow-[0_18px_40px_rgba(193,18,31,0.2)] rotate-[1.5deg]">
+                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-[#c1121f] border-2 border-black/80 shadow-[0_2px_5px_rgba(0,0,0,0.9)] z-10 flex items-center justify-center">
+                          <div className="w-0.5 h-0.5 rounded-full bg-white/70" />
+                        </div>
+                        <div className="relative overflow-hidden aspect-[4/3] w-full bg-[#121215]">
+                          <img
+                            src={IMG.chapel}
+                            alt="The Chapel"
+                            draggable={false}
+                            onError={hideCardOnError}
+                            className="h-full w-full object-cover grayscale-[35%]"
+                          />
+                          <div className="absolute bottom-1.5 left-1.5 bg-black/80 px-1 py-0.2 text-[7px] font-mono text-[#e8e0cf]">
+                            EX-02
+                          </div>
+                        </div>
+                        <figcaption className="absolute bottom-1 left-2 right-2 truncate font-display text-[11px] sm:text-[12px] text-[#2c1414]">
+                          her altar. candles are hers
+                        </figcaption>
+                      </figure>
+
+                      {/* Tertiary Photo: Basement */}
+                      <figure className="relative bg-[#e8e0cf] p-2 pb-7 shadow-[0_12px_30px_rgba(0,0,0,0.8)] border border-[#d6cebe] transition-all duration-300 hover:scale-[1.03] hover:rotate-0 hover:z-20 hover:shadow-[0_18px_40px_rgba(193,18,31,0.2)] -rotate-[2deg]">
+                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-[#c1121f] border-2 border-black/80 shadow-[0_2px_5px_rgba(0,0,0,0.9)] z-10 flex items-center justify-center">
+                          <div className="w-0.5 h-0.5 rounded-full bg-white/70" />
+                        </div>
+                        <div className="relative overflow-hidden aspect-[4/3] w-full bg-[#121215]">
+                          <img
+                            src={IMG.basement}
+                            alt="The Cellar"
+                            draggable={false}
+                            onError={hideCardOnError}
+                            className="h-full w-full object-cover grayscale-[35%]"
+                          />
+                          <div className="absolute bottom-1.5 left-1.5 bg-black/80 px-1 py-0.2 text-[7px] font-mono text-[#e8e0cf]">
+                            EX-03
+                          </div>
+                        </div>
+                        <figcaption className="absolute bottom-1 left-2 right-2 truncate font-display text-[11px] sm:text-[12px] text-[#2c1414]">
+                          where they put him. he knocks
+                        </figcaption>
+                      </figure>
+                    </div>
+                  </div>
+
+                  {/* Forensic Document Sub-note */}
+                  <div className="mt-4 pt-3 border-t border-[#e8e0cf]/10 flex items-center justify-between text-[9px] font-mono text-[#e8e0cf]/40">
+                    <span>RECOVERED FROM CELLAR HATCH</span>
+                    <span className="text-[#c1121f]">CORONER CERTIFIED</span>
+                  </div>
+                </div>
+              </div>
+
             </div>
-          </div>
+          </main>
+
+          {/* Bottom Horror Status Ticker (Fixed, Non-colliding, Responsive) */}
+          <footer className="fixed bottom-0 left-0 right-0 z-20 overflow-hidden border-t border-[#c1121f]/25 bg-[#050506]/92 backdrop-blur-md py-2 select-none">
+            <div className="marquee whitespace-nowrap text-[10px] sm:text-[11px] tracking-[0.35em] text-[#c1121f]/80 font-mono">
+              <span>{TICKER}</span>
+              <span>{TICKER}</span>
+            </div>
+          </footer>
         </div>
       )}
 

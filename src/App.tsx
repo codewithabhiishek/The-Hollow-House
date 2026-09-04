@@ -221,6 +221,7 @@ export default function App() {
     const eng = new HorrorEngine(canvas, mini, ev, viewRef.current ?? undefined);
     eng.setDifficulty(diffRef.current);
     engineRef.current = eng;
+    (window as any).__engine = eng;
     eng.start();
     const iv = window.setInterval(() => {
       const s = eng.stats();
@@ -237,6 +238,7 @@ export default function App() {
     return () => {
       window.clearInterval(iv);
       window.clearTimeout(ht);
+      (window as any).__engine = null;
       eng.destroy();
       engineRef.current = null;
     };
@@ -311,6 +313,11 @@ export default function App() {
     pushLog('You wake on the hall floor. The front door is sealed behind you.');
     window.setTimeout(() => flashMsg('Seven rites free the door. She is already in the house with you.'), 900);
   }, [pushLog, flashMsg, diff, applyPause]);
+
+  useEffect(() => {
+    (window as any).__startGame = startGame;
+    return () => { (window as any).__startGame = null; };
+  }, [startGame]);
 
   /* story cards: click / E / space advances; last card starts the night */
   useEffect(() => {

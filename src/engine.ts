@@ -413,7 +413,9 @@ export class HorrorEngine {
   private bob = 0;
   private movePhase = 0;
   private yawAccum = 0;
-
+  private pitch = 0;
+  private pitchPx = 0;
+  private wallDist = 5.5;
   private sprites: Sprite[] = [];
   private candles: Candle[] = [
     { x: 29.3, y: 13.7, lit: false },
@@ -509,7 +511,9 @@ export class HorrorEngine {
   private mouseDownX = 0;
   private mouseDownY = 0;
   private touchX = 0;
+  private touchY = 0;
   private dragX = 0;
+  private dragY = 0;
   private dragging = false;
 
   private mainCv: HTMLCanvasElement;
@@ -584,9 +588,12 @@ export class HorrorEngine {
     this.onMouseMove = (e) => {
       if (document.pointerLockElement) {
         this.yawAccum += e.movementX * 0.0026;
+        this.pitch = Math.max(-0.42, Math.min(0.42, this.pitch - e.movementY * 0.0022));
       } else if (this.dragging) {
         this.yawAccum += (e.clientX - this.dragX) * 0.006;
+        this.pitch = Math.max(-0.42, Math.min(0.42, this.pitch - (e.clientY - this.dragY) * 0.004));
         this.dragX = e.clientX;
+        this.dragY = e.clientY;
       }
     };
     this.onMouseDown = (e) => {
@@ -601,6 +608,7 @@ export class HorrorEngine {
         }
         this.dragging = true;
         this.dragX = e.clientX;
+        this.dragY = e.clientY;
       }
       // hold the mouse button to walk; a quick click still interacts
       this.mouseHeld = true;
@@ -620,11 +628,15 @@ export class HorrorEngine {
     this.onContextMenu = (e) => e.preventDefault();
     this.onTouchStart = (e) => {
       this.touchX = e.touches[0]?.clientX ?? 0;
+      this.touchY = e.touches[0]?.clientY ?? 0;
     };
     this.onTouchMove = (e) => {
-      const x = e.touches[0]?.clientX ?? 0;
-      this.yawAccum += (x - this.touchX) * 0.008;
-      this.touchX = x;
+      const t = e.touches[0];
+      if (!t) return;
+      this.yawAccum += (t.clientX - this.touchX) * 0.008;
+      this.pitch = Math.max(-0.42, Math.min(0.42, this.pitch - (t.clientY - this.touchY) * 0.005));
+      this.touchX = t.clientX;
+      this.touchY = t.clientY;
     };
 
     window.addEventListener('keydown', this.onKeyDown);
@@ -696,6 +708,15 @@ export class HorrorEngine {
 
   setDifficulty(d: Difficulty) {
     this.diff = DIFFS[d];
+  }
+
+  rotate(angleRad: number) {
+    this.yawAccum += angleRad;
+  }
+
+  setPitch(pitchRad: number) {
+    this.pitch = Math.max(-0.42, Math.min(0.42, pitchRad));
+    this.pitchPx = Math.tan(this.pitch) * (this.rows * 0.55);
   }
 
   private fireStory(id: string) {
@@ -789,19 +810,38 @@ export class HorrorEngine {
     const flick = this.flickerT > 0 ? 0.5 + Math.random() * 0.35 : 1;
     // moonlight seeping through every window — the house is never dead black
     let l = this.diff.ambient * flick;
-    const dx = x - this.px;
-    const dy = y - this.py;
+
+    // Flashlight held in player's right hand in 3D world space:
+    const rightX = this.dirY;
+    const rightY = -this.dirX;
+    const lensWorldX = this.px + rightX * 0.22 + this.dirX * 0.20;
+    const lensWorldY = this.py + rightY * 0.22 + this.dirY * 0.20;
+
+    // Target point in world space directly in line with camera forward crosshair:
+    const targetDist = Math.max(1.5, this.wallDist);
+    const targetWorldX = this.px + this.dirX * targetDist;
+    const targetWorldY = this.py + this.dirY * targetDist;
+
+    // Authoritative forward vector from lens to crosshair target:
+    const fwdX = targetWorldX - lensWorldX;
+    const fwdY = targetWorldY - lensWorldY;
+    const fwdLen = Math.hypot(fwdX, fwdY) || 1;
+    const flashDirX = fwdX / fwdLen;
+    const flashDirY = fwdY / fwdLen;
+
+    const dx = x - lensWorldX;
+    const dy = y - lensWorldY;
     const d = Math.hypot(dx, dy);
     const ang = Math.atan2(dy, dx);
-    const facing = Math.atan2(this.dirY, this.dirX);
+    const facing = Math.atan2(flashDirY, flashDirX);
     let diff = Math.abs(ang - facing);
     if (diff > Math.PI) diff = Math.PI * 2 - diff;
-    const cone = Math.max(0, 1 - diff / 0.74);
+    const cone = Math.max(0, 1 - diff / 0.68);
     const att = Math.max(0, 1 - d / 12.5);
     const beam = this.flashOn ? 0.45 + 0.55 * (this.battery / 100) : 0;
-    l += 1.05 * cone * cone * att * flick * beam;
+    l += 1.15 * cone * cone * att * flick * beam;
     // spill from the torch held at your side — near things stay faintly visible
-    l += 0.1 * att * att * flick;
+    l += 0.08 * att * att * flick * beam;
     for (let i = 0; i < this.candles.length; i++) {
       const c = this.candles[i];
       if (!c.lit) continue;
@@ -1228,6 +1268,8 @@ export class HorrorEngine {
     }
     if (k['ArrowLeft']) this.yawAccum -= 2.6 * dt;
     if (k['ArrowRight']) this.yawAccum += 2.6 * dt;
+    if (k['PageUp'] || k['KeyI']) this.pitch = Math.min(0.42, this.pitch + 1.8 * dt);
+    if (k['PageDown'] || k['KeyK']) this.pitch = Math.max(-0.42, this.pitch - 1.8 * dt);
     const ml = Math.hypot(mx, my);
     const sprint = wantSprint && ml > 0 && !this.exhausted && this.stamina > 2;
     if (sprint) {
@@ -1306,6 +1348,7 @@ export class HorrorEngine {
       this.planeY = this.planeX * sin + this.planeY * cos;
       this.planeX = npx;
     }
+    this.pitchPx = Math.tan(this.pitch) * (this.rows * 0.55);
 
     /* nursery giggle */
     if (!this.nurseryVisited && this.px > 5 && this.px < 11 && this.py > 5 && this.py < 12) {
@@ -1626,28 +1669,30 @@ export class HorrorEngine {
     const shY = this.shake > 0.05 ? (Math.random() - 0.5) * this.shake : 0;
     ctx.save();
     ctx.translate(shX + this.lean * 0.5, shY);
+    const bobPx = this.bob;
+    const horizon = Math.floor(rows / 2 + bobPx + this.pitchPx);
+
     /* floor & ceiling */
-    const fg = ctx.createLinearGradient(0, rows / 2, 0, rows);
+    const fg = ctx.createLinearGradient(0, horizon, 0, rows);
     fg.addColorStop(0, '#1c1610');
     fg.addColorStop(1, '#0c0906');
     ctx.fillStyle = fg;
-    ctx.fillRect(0, rows / 2, cols, rows / 2);
+    ctx.fillRect(0, horizon, cols, rows - horizon);
     /* your torch throws a warm pool on the floorboards at your feet */
     const pool = this.flickerT > 0 ? 0.05 : 0.15;
-    const pg = ctx.createRadialGradient(cols / 2, rows * 0.85, 6, cols / 2, rows * 0.85, cols * 0.36);
+    const pg = ctx.createRadialGradient(cols / 2, rows * 0.85 + this.pitchPx, 6, cols / 2, rows * 0.85 + this.pitchPx, cols * 0.36);
     pg.addColorStop(0, `rgba(255,213,148,${pool})`);
     pg.addColorStop(1, 'rgba(255,213,148,0)');
     ctx.fillStyle = pg;
-    ctx.fillRect(0, rows / 2, cols, rows / 2);
-    const cg = ctx.createLinearGradient(0, 0, 0, rows / 2);
+    ctx.fillRect(0, horizon, cols, rows - horizon);
+    const cg = ctx.createLinearGradient(0, 0, 0, horizon);
     cg.addColorStop(0, '#040405');
     cg.addColorStop(1, '#12100c');
     ctx.fillStyle = cg;
-    ctx.fillRect(0, 0, cols, rows / 2);
-
-    const bobPx = this.bob;
+    ctx.fillRect(0, 0, cols, horizon);
 
     /* walls */
+    const midCol = Math.floor(cols / 2);
     for (let x = 0; x < cols; x++) {
       const cameraX = (2 * x) / cols - 1;
       const rdx = this.dirX + this.planeX * cameraX;
@@ -1690,8 +1735,11 @@ export class HorrorEngine {
       }
       const perp = Math.max(0.03, side === 0 ? sideX - dX : sideY - dY);
       this.zbuf[x] = perp;
+      if (x === midCol) {
+        this.wallDist = perp;
+      }
       const lineH = rows / perp;
-      const top = (rows - lineH) / 2 + bobPx;
+      const top = (rows - lineH) / 2 + bobPx + this.pitchPx;
       let wallX = side === 0 ? this.py + perp * rdy : this.px + perp * rdx;
       wallX -= Math.floor(wallX);
       let texX = Math.floor(wallX * 64);
@@ -1747,25 +1795,28 @@ export class HorrorEngine {
     const flick = this.flickerT > 0 ? 0.5 + Math.random() * 0.45 : this.battery < 15 ? 0.72 + Math.random() * 0.28 : 1;
     const beam = power * flick;
 
-    const swayX = Math.sin(this.movePhase * 0.5) * 14 + this.lean * 2.2 + this.torchLag * 55;
-    const swayY = Math.abs(Math.sin(this.movePhase)) * 9 + this.kick * 4;
+    // Natural footstep bob and strafe lean (zero lag on aim)
+    const swayX = Math.sin(this.movePhase * 0.5) * 12 + this.lean * 2.2;
+    const swayY = Math.abs(Math.sin(this.movePhase)) * 8 + this.kick * 4;
 
     const s = vh * 0.88;
     const scale = s / TORCH_H;
 
-    // Tactical gloved hand anchor in lower-right viewport
-    const ax = vw * 0.78 + swayX;
-    const ay = vh * 0.94 + swayY;
-
-    // Crosshair target (dead ahead on horizon):
-    const tx = vw * 0.5 + this.lean * 6 - this.torchLag * 20;
+    // Authoritative crosshair target (exact center of screen, where the camera looks):
+    const tx = vw * 0.5 + this.lean * 4;
     const ty = vh * 0.5 + this.bob;
 
-    // Aim angle from flashlight hand to the crosshair:
+    // Tactical gloved hand anchor in lower-right viewport, responding to camera pitch:
+    const pitchShift = Math.tan(this.pitch) * (vh * 0.25);
+    const ax = vw * 0.76 + swayX;
+    const ay = vh * 0.93 + swayY - pitchShift;
+
+    // Aim angle from flashlight hand anchor directly to the crosshair:
     const aim = Math.atan2(ty - ay, tx - ax);
 
-    // Flashlight barrel in sprite has exact angle TORCH_LANDMARKS.barrelAngle (-158.79 deg).
-    // Setting rot = aim - TORCH_LANDMARKS.barrelAngle guarantees the barrel points EXACTLY at (tx, ty)!
+    // Flashlight barrel in sprite space has exact angle TORCH_LANDMARKS.barrelAngle (-158.79 deg).
+    // Setting rot = aim - TORCH_LANDMARKS.barrelAngle guarantees that the physical barrel
+    // and lens point directly at (tx, ty)!
     const rot = aim - TORCH_LANDMARKS.barrelAngle;
 
     // Forward kinematics: exact physical screen-space position of the flashlight lens:
@@ -1783,59 +1834,66 @@ export class HorrorEngine {
     const normX = -fwdY;
     const normY = fwdX;
 
+    // Target spotlight pool radius on the wall at the crosshair:
+    const rEnd = Math.max(35, Math.min(vh * 0.32, vh * 0.22 * (5.5 / Math.max(1.2, this.wallDist))));
+    const rStart = 18 * scale; // aperture size at lens
+
     if (beam > 0.03) {
       c.save();
       c.globalCompositeOperation = 'lighter';
 
-      const rStart = 32 * scale; // aperture size at lens
-      const rEnd = vh * 0.26;    // spotlight cone radius around crosshair
-
-      // Target extent along beam line (penetrates into hallway):
-      const targetDist = beamLen * 1.35;
-      const ex = lx + fwdX * targetDist;
-      const ey = ly + fwdY * targetDist;
-
-      /* Volumetric beam casting forward into the darkness */
-      const g = c.createLinearGradient(lx, ly, ex, ey);
-      g.addColorStop(0, `rgba(255, 235, 190, ${(0.22 * beam).toFixed(3)})`);
-      g.addColorStop(0.35, `rgba(255, 220, 160, ${(0.10 * beam).toFixed(3)})`);
-      g.addColorStop(0.75, `rgba(255, 210, 150, ${(0.03 * beam).toFixed(3)})`);
-      g.addColorStop(1, 'rgba(255, 210, 150, 0)');
+      /* 1. Volumetric beam casting forward into the darkness, terminating at the crosshair wall pool */
+      const g = c.createLinearGradient(lx, ly, tx, ty);
+      g.addColorStop(0, `rgba(255, 238, 195, ${(0.26 * beam).toFixed(3)})`);
+      g.addColorStop(0.25, `rgba(255, 225, 170, ${(0.12 * beam).toFixed(3)})`);
+      g.addColorStop(0.70, `rgba(255, 215, 155, ${(0.04 * beam).toFixed(3)})`);
+      g.addColorStop(1, `rgba(255, 210, 150, ${(0.01 * beam).toFixed(3)})`);
       c.fillStyle = g;
 
       c.beginPath();
       c.moveTo(lx - normX * rStart, ly - normY * rStart);
       c.lineTo(lx + normX * rStart, ly + normY * rStart);
-      c.lineTo(ex + normX * rEnd, ey + normY * rEnd);
-      c.lineTo(ex - normX * rEnd, ey - normY * rEnd);
+      c.lineTo(tx + normX * rEnd, ty + normY * rEnd);
+      c.lineTo(tx - normX * rEnd, ty - normY * rEnd);
       c.closePath();
       c.fill();
 
-      /* Target ambient illumination pool centered on crosshair */
-      const pool = c.createRadialGradient(tx, ty, 5, tx, ty, rEnd * 1.3);
-      pool.addColorStop(0, `rgba(255, 225, 175, ${(0.12 * beam).toFixed(3)})`);
-      pool.addColorStop(0.5, `rgba(255, 215, 160, ${(0.05 * beam).toFixed(3)})`);
-      pool.addColorStop(1, 'rgba(255, 215, 160, 0)');
+      /* 2. Target ambient illumination pool on the wall, CENTERED AT CROSSHAIR */
+      const pool = c.createRadialGradient(tx, ty, 0, tx, ty, rEnd * 1.25);
+      pool.addColorStop(0, `rgba(255, 240, 205, ${(0.22 * beam).toFixed(3)})`);
+      pool.addColorStop(0.35, `rgba(255, 225, 180, ${(0.12 * beam).toFixed(3)})`);
+      pool.addColorStop(0.75, `rgba(255, 210, 150, ${(0.04 * beam).toFixed(3)})`);
+      pool.addColorStop(1, 'rgba(255, 210, 150, 0)');
       c.fillStyle = pool;
       c.beginPath();
-      c.arc(tx, ty, rEnd * 1.3, 0, Math.PI * 2);
+      c.arc(tx, ty, rEnd * 1.25, 0, Math.PI * 2);
       c.fill();
 
-      /* dust motes drifting inside the volumetric beam */
+      /* 3. Concentrated hot core at the center of the beam (on the crosshair) */
+      const coreHot = c.createRadialGradient(tx, ty, 0, tx, ty, rEnd * 0.45);
+      coreHot.addColorStop(0, `rgba(255, 255, 240, ${(0.18 * beam).toFixed(3)})`);
+      coreHot.addColorStop(0.5, `rgba(255, 235, 190, ${(0.08 * beam).toFixed(3)})`);
+      coreHot.addColorStop(1, 'rgba(255, 235, 190, 0)');
+      c.fillStyle = coreHot;
+      c.beginPath();
+      c.arc(tx, ty, rEnd * 0.45, 0, Math.PI * 2);
+      c.fill();
+
+      /* 4. Dust motes drifting inside the volumetric beam between lens and crosshair */
       for (const m of this.motes) {
-        m.z -= 0.0016 * (0.6 + m.s);
-        if (m.z <= 0.05) {
+        m.z -= 0.0018 * (0.6 + m.s);
+        if (m.z <= 0.04) {
           m.z = 1;
           m.x = Math.random();
           m.y = Math.random();
         }
-        const d = (1 - m.z) * targetDist;
+        const d = (1 - m.z) * beamLen;
         const curR = rStart + (rEnd - rStart) * (1 - m.z);
         const offset = (m.x - 0.5) * 2 * curR * 0.85;
         const px = lx + fwdX * d + normX * offset;
         const py = ly + fwdY * d + normY * offset;
         const tw = 0.55 + 0.45 * Math.sin(this.time * 3 + m.x * 21);
-        const a = Math.max(0, 0.4 * beam * m.z * tw);
+        const a = Math.max(0, 0.36 * beam * m.z * tw);
         c.fillStyle = `rgba(255, 238, 200, ${(a * 0.6).toFixed(3)})`;
         const r = m.s * (0.6 + m.z);
         c.fillRect(px, py, r, r);
@@ -1843,7 +1901,7 @@ export class HorrorEngine {
       c.restore();
     }
 
-    /* the torch body and tactical gloved hand */
+    /* 5. The torch body and tactical gloved hand */
     c.save();
     c.translate(ax, ay);
     c.rotate(rot);
@@ -1859,59 +1917,58 @@ export class HorrorEngine {
     );
     c.restore();
 
-    /* Multi-layered dynamic lens bloom, reflector glare, and optical flare */
+    /* 6. Multi-layered dynamic lens bloom, reflector glare, and optical flare */
     if (beam > 0.03) {
       c.save();
       c.globalCompositeOperation = 'lighter';
 
-      // 1. Soft atmospheric halo around the flashlight head
-      const halo = c.createRadialGradient(lx, ly, 8 * scale, lx, ly, vh * 0.14);
+      // Soft atmospheric halo around the flashlight head
+      const halo = c.createRadialGradient(lx, ly, 6 * scale, lx, ly, vh * 0.12);
       halo.addColorStop(0, `rgba(255, 235, 195, ${(0.32 * beam).toFixed(3)})`);
       halo.addColorStop(0.4, `rgba(255, 210, 150, ${(0.12 * beam).toFixed(3)})`);
       halo.addColorStop(1, 'rgba(255, 200, 140, 0)');
       c.fillStyle = halo;
       c.beginPath();
-      c.arc(lx, ly, vh * 0.14, 0, Math.PI * 2);
+      c.arc(lx, ly, vh * 0.12, 0, Math.PI * 2);
       c.fill();
 
-      // 2. Reflector dish inner glow matching the bezel opening
-      const reflGlow = c.createRadialGradient(lx, ly, 2 * scale, lx, ly, 34 * scale);
+      // Reflector dish inner glow matching the bezel opening
+      const reflGlow = c.createRadialGradient(lx, ly, 2 * scale, lx, ly, 32 * scale);
       reflGlow.addColorStop(0, `rgba(255, 255, 255, ${(0.85 * beam).toFixed(3)})`);
       reflGlow.addColorStop(0.35, `rgba(255, 245, 220, ${(0.65 * beam).toFixed(3)})`);
       reflGlow.addColorStop(0.75, `rgba(255, 215, 140, ${(0.35 * beam).toFixed(3)})`);
       reflGlow.addColorStop(1, 'rgba(255, 200, 120, 0)');
       c.fillStyle = reflGlow;
       c.beginPath();
-      c.arc(lx, ly, 34 * scale, 0, Math.PI * 2);
+      c.arc(lx, ly, 32 * scale, 0, Math.PI * 2);
       c.fill();
 
-      // 3. Ultra-bright Cree LED emitter hot core
-      const core = c.createRadialGradient(lx, ly, 0, lx, ly, 12 * scale);
-      core.addColorStop(0, `rgba(255, 255, 255, ${(0.95 * beam).toFixed(3)})`);
-      core.addColorStop(0.5, `rgba(255, 250, 230, ${(0.70 * beam).toFixed(3)})`);
+      // Ultra-bright Cree LED emitter hot core
+      const core = c.createRadialGradient(lx, ly, 0, lx, ly, 10 * scale);
+      core.addColorStop(0, `rgba(255, 255, 255, ${(0.98 * beam).toFixed(3)})`);
+      core.addColorStop(0.5, `rgba(255, 250, 230, ${(0.75 * beam).toFixed(3)})`);
       core.addColorStop(1, 'rgba(255, 240, 200, 0)');
       c.fillStyle = core;
       c.beginPath();
-      c.arc(lx, ly, 12 * scale, 0, Math.PI * 2);
+      c.arc(lx, ly, 10 * scale, 0, Math.PI * 2);
       c.fill();
 
-      // 4. Subtle anamorphic lens glare streak aligned with the lens face
+      // Subtle anamorphic lens glare streak aligned with the lens face
       const flareAngle = aim + Math.PI * 0.5;
       const streak = c.createLinearGradient(
-        lx - Math.cos(flareAngle) * 75 * scale,
-        ly - Math.sin(flareAngle) * 75 * scale,
-        lx + Math.cos(flareAngle) * 75 * scale,
-        ly + Math.sin(flareAngle) * 75 * scale
+        lx - Math.cos(flareAngle) * 65 * scale,
+        ly - Math.sin(flareAngle) * 65 * scale,
+        lx + Math.cos(flareAngle) * 65 * scale,
+        ly + Math.sin(flareAngle) * 65 * scale
       );
       streak.addColorStop(0, 'rgba(255, 230, 180, 0)');
-      streak.addColorStop(0.5, `rgba(255, 245, 225, ${(0.28 * beam).toFixed(3)})`);
+      streak.addColorStop(0.5, `rgba(255, 245, 225, ${(0.30 * beam).toFixed(3)})`);
       streak.addColorStop(1, 'rgba(255, 230, 180, 0)');
       c.fillStyle = streak;
       c.beginPath();
-      c.ellipse(lx, ly, 75 * scale, 3.5 * scale, flareAngle, 0, Math.PI * 2);
+      c.ellipse(lx, ly, 65 * scale, 3 * scale, flareAngle, 0, Math.PI * 2);
       c.fill();
 
-      c.restore();
     }
   }
 
@@ -1939,7 +1996,7 @@ export class HorrorEngine {
       }
       const sprH = unit * scale;
       const sprW = sprH * s.wide;
-      const floorY = rows / 2 + unit / 2 + bobPx;
+      const floorY = rows / 2 + unit / 2 + bobPx + this.pitchPx;
       const bottom = floorY - unit * s.float;
       const top = bottom - sprH;
       const left = screenX - sprW / 2;

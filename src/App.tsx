@@ -574,7 +574,17 @@ export default function App() {
                   </div>
 
                   <div className="pt-2 text-center text-[10px] font-mono tracking-[0.22em] text-[#e8e0cf]/35 uppercase">
-                    Built by Abhishek &nbsp;·&nbsp; <span className="text-[#c1121f]/80">blame him.</span>
+                    <a
+                      href="https://abhiishek.is-a.dev/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-[#e8e0cf] hover:underline underline-offset-4 transition-colors cursor-pointer"
+                      title="Abhishek's Portfolio"
+                    >
+                      Built by Abhishek
+                    </a>
+                    &nbsp;·&nbsp;
+                    <span className="text-[#c1121f]/80">blame him.</span>
                   </div>
                 </div>
 

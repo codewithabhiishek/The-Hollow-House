@@ -1,0 +1,227 @@
+@import "tailwindcss";
+
+:root {
+  --mx: 50vw;
+  --my: 42vh;
+  --blood: #c1121f;
+  --bone: #e8e0cf;
+  --ember: #ff9e4a;
+}
+
+html, body, #root { height: 100%; }
+
+body {
+  background: #050506;
+  color: #e8e0cf;
+  font-family: 'Special Elite', 'Courier New', monospace;
+  overflow: hidden;
+  /* the night is played with a finger on the glass: no rubber-band scroll,
+     no pinch-zoom, no blue tap flash over the D-pad */
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.font-display { font-family: 'Creepster', cursive; letter-spacing: 0.04em; }
+
+.pixelated { image-rendering: pixelated; }
+
+/* ---------- atmosphere layers ---------- */
+.grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.7'/%3E%3C/svg%3E");
+  animation: grain-jitter 0.45s steps(3) infinite;
+  opacity: 0.07;
+}
+@keyframes grain-jitter {
+  0% { transform: translate(0, 0); }
+  33% { transform: translate(-2%, 1%); }
+  66% { transform: translate(1%, -2%); }
+  100% { transform: translate(0, 0); }
+}
+
+.scanlines {
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0.28) 0px, rgba(0,0,0,0.28) 1px, transparent 1px, transparent 3px);
+  opacity: 0.2;
+}
+
+.vignette { background: radial-gradient(ellipse at center, transparent 62%, rgba(0,0,0,0.68) 100%); }
+
+.blood-vignette {
+  background: radial-gradient(ellipse at center, transparent 42%, rgba(140,0,12,0.55) 100%);
+  animation: blood-pulse 1.15s ease-in-out infinite;
+}
+@keyframes blood-pulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.7; } }
+
+.fog { position: absolute; inset: -20%; pointer-events: none; mix-blend-mode: screen; }
+.fog-a {
+  background:
+    radial-gradient(42% 30% at 30% 62%, rgba(125,135,155,0.10), transparent 70%),
+    radial-gradient(34% 26% at 72% 28%, rgba(105,115,135,0.08), transparent 70%);
+  animation: fog-drift 26s ease-in-out infinite alternate;
+}
+.fog-b {
+  background: radial-gradient(46% 34% at 60% 72%, rgba(140,140,160,0.07), transparent 70%);
+  animation: fog-drift 38s ease-in-out infinite alternate-reverse;
+}
+@keyframes fog-drift { from { transform: translate3d(-4%, 0, 0); } to { transform: translate3d(4%, -2%, 0); } }
+
+/* ---------- flashlight ---------- */
+.flashlight {
+  background:
+    radial-gradient(circle 260px at var(--mx) var(--my), rgba(255,205,140,0.06), rgba(0,0,0,0) 42%),
+    radial-gradient(circle 260px at var(--mx) var(--my), rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 52%, rgba(0,0,0,0.94) 100%);
+}
+.flash-flicker { animation: flash-flicker 0.9s steps(2) both; }
+@keyframes flash-flicker {
+  0%, 100% { opacity: 1; } 18% { opacity: 0.25; } 34% { opacity: 0.95; }
+  50% { opacity: 0.4; } 68% { opacity: 1; } 82% { opacity: 0.6; }
+}
+
+/* ---------- rooms ---------- */
+.room-in { animation: room-in 0.85s ease-out both; }
+@keyframes room-in {
+  from { opacity: 0; filter: brightness(0); }
+  55% { filter: brightness(0.45); }
+  to { opacity: 1; filter: brightness(1); }
+}
+.kenburns { animation: kenburns 28s ease-in-out infinite alternate; }
+@keyframes kenburns {
+  from { transform: scale(1.03) translate(0, 0); }
+  to { transform: scale(1.13) translate(-1.6%, -1%); }
+}
+
+/* ---------- title ---------- */
+.title-flicker { animation: title-flicker 4.4s linear infinite; }
+@keyframes title-flicker {
+  0%, 100% { opacity: 1; } 3% { opacity: 0.35; } 5% { opacity: 1; }
+  41% { opacity: 1; } 43% { opacity: 0.5; } 45% { opacity: 1; }
+  72% { opacity: 1; } 73% { opacity: 0.2; } 74% { opacity: 1; }
+}
+.marquee { animation: marquee 30s linear infinite; }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* ---------- jumpscare ---------- */
+.scare-zoom { animation: scare-zoom 1s cubic-bezier(0.19,1,0.22,1) both; }
+@keyframes scare-zoom {
+  0% { transform: scale(0.55); }
+  12% { transform: scale(1.02); }
+  20% { transform: scale(0.96) translateX(-9px); }
+  30% { transform: scale(1.06) translateX(9px); }
+  45% { transform: scale(1.12); }
+  60% { transform: scale(1.19) translateX(-7px); }
+  80% { transform: scale(1.27); }
+  100% { transform: scale(1.34); opacity: 0; }
+}
+.scare-shake { animation: scare-shake 0.85s linear both; }
+@keyframes scare-shake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-12px, 7px); }
+  20% { transform: translate(11px, -9px); }
+  30% { transform: translate(-9px, -6px); }
+  40% { transform: translate(10px, 8px); }
+  50% { transform: translate(-11px, 5px); }
+  60% { transform: translate(8px, -8px); }
+  70% { transform: translate(-7px, 7px); }
+  80% { transform: translate(9px, 4px); }
+  90% { transform: translate(-4px, -5px); }
+}
+.scare-red {
+  background: radial-gradient(circle, rgba(193,18,31,0.4), rgba(110,0,10,0.75));
+  animation: scare-red 1s ease-out both;
+}
+@keyframes scare-red { 0% { opacity: 0; } 15% { opacity: 0.9; } 100% { opacity: 0; } }
+.scare-static { animation: grain-jitter 0.12s steps(2) infinite; opacity: 0.28; }
+
+.root-shake { animation: root-shake 0.85s linear both; }
+@keyframes root-shake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-12px, 7px) rotate(-0.4deg); }
+  20% { transform: translate(11px, -9px) rotate(0.4deg); }
+  30% { transform: translate(-9px, -6px); }
+  40% { transform: translate(10px, 8px) rotate(0.3deg); }
+  50% { transform: translate(-11px, 5px); }
+  60% { transform: translate(8px, -8px) rotate(-0.3deg); }
+  70% { transform: translate(-7px, 7px); }
+  80% { transform: translate(9px, 4px); }
+  90% { transform: translate(-4px, -5px); }
+}
+
+/* ---------- apparition ---------- */
+.apparition {
+  animation: apparition 1.7s ease-in-out both;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 32px rgba(170,190,255,0.25));
+}
+@keyframes apparition {
+  0% { opacity: 0; transform: translateY(12px) scale(0.98); }
+  22% { opacity: 0.95; }
+  70% { opacity: 0.85; }
+  100% { opacity: 0; transform: translateY(-16px) scale(1.03); }
+}
+
+/* ---------- candles ---------- */
+.ember-glow {
+  background: radial-gradient(circle, rgba(255,158,74,0.55), rgba(255,158,74,0.14) 40%, transparent 70%);
+  animation: ember-pulse 1.7s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+@keyframes ember-pulse {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.14); }
+}
+
+/* ---------- hotspots ---------- */
+.hs-dot {
+  width: 6px; height: 6px; border-radius: 9999px;
+  background: #c1121f; box-shadow: 0 0 12px rgba(193,18,31,0.9);
+  animation: dot-pulse 2.3s ease-in-out infinite;
+}
+@keyframes dot-pulse {
+  0%, 100% { transform: scale(0.8); opacity: 0.35; }
+  50% { transform: scale(1.5); opacity: 0.85; }
+}
+
+/* ---------- misc ---------- */
+.toast-in { animation: toast-in 0.35s cubic-bezier(0.16,1,0.3,1) both; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+.chase-ghost { animation: chase-grow 6.8s linear forwards; }
+@keyframes chase-grow {
+  from { transform: translate(-50%, -50%) scale(0.12); opacity: 0.35; filter: brightness(0.55); }
+  to { transform: translate(-50%, -50%) scale(1.9); opacity: 1; filter: brightness(1.45); }
+}
+.chase-shake { animation: chase-shake 0.26s linear infinite; }
+@keyframes chase-shake {
+  25% { transform: translate(3px, -2px); }
+  50% { transform: translate(-3px, 2px); }
+  75% { transform: translate(2px, 3px); }
+}
+
+.die-zoom { animation: die-zoom 16s ease-in-out infinite alternate; }
+@keyframes die-zoom { from { transform: scale(1); } to { transform: scale(1.16); } }
+
+.fade-up { animation: fade-up 0.9s cubic-bezier(0.16,1,0.3,1) both; }
+@keyframes fade-up { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
+
+.blink-soft { animation: blink-soft 1.6s ease-in-out infinite; }
+@keyframes blink-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+.story-bar { animation: story-bar 6.2s cubic-bezier(0.16,1,0.3,1) both; }
+@keyframes story-bar {
+  0% { opacity: 0; transform: translateY(110%); }
+  7% { opacity: 1; transform: none; }
+  88% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.hit-flash { animation: hit-flash 0.5s ease-out both; }
+@keyframes hit-flash {
+  0% { opacity: 0; }
+  12% { opacity: 0.85; }
+  100% { opacity: 0; }
+}

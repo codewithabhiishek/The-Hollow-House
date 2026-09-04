@@ -381,11 +381,16 @@ export const TORCH_H = 1200;
 /** Exact coordinates of key flashlight landmarks in the 896x1200 sprite */
 export const TORCH_LANDMARKS = {
   // Center of the Cree LED emitter inside the parabolic reflector
-  lensX: 236,
-  lensY: 256,
+  lensX: 213.5,
+  lensY: 303.0,
+  // Center of the knurled metal handle where the glove grips it
+  gripX: 460.9,
+  gripY: 399.0,
   // Base anchor point for forearm/wrist rotation
   pivotX: 740,
   pivotY: 1140,
+  // Exact angle of the flashlight barrel in sprite space (from grip to lens center)
+  barrelAngle: -2.7714, // Math.atan2(303.0 - 399.0, 213.5 - 460.9) === -158.79 deg
 };
 
 /** Procedural stand-in for the torch photograph. Drawn along the same

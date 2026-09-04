@@ -1750,65 +1750,78 @@ export class HorrorEngine {
     const swayX = Math.sin(this.movePhase * 0.5) * 14 + this.lean * 2.2 + this.torchLag * 55;
     const swayY = Math.abs(Math.sin(this.movePhase)) * 9 + this.kick * 4;
 
-    const s = vh * 0.85;
+    const s = vh * 0.88;
     const scale = s / TORCH_H;
-    const ax = vw * 0.88 + swayX;
-    const ay = vh * 1.05 + swayY;
 
-    /* The torch aims at the crosshair — the horizon dead ahead, never the
-       ceiling — and barrel, lens and beam all share that one axis, because
-       light does not bend at the glass. Deriving the rotation from the aim is
-       what stops the flashlight reading as tilted up in the player's hand. */
-    const tx = vw * 0.5 + this.lean * 8;
-    const ty = vh * 0.5;
+    // Tactical gloved hand anchor in lower-right viewport
+    const ax = vw * 0.78 + swayX;
+    const ay = vh * 0.94 + swayY;
+
+    // Crosshair target (dead ahead on horizon):
+    const tx = vw * 0.5 + this.lean * 6 - this.torchLag * 20;
+    const ty = vh * 0.5 + this.bob;
+
+    // Aim angle from flashlight hand to the crosshair:
     const aim = Math.atan2(ty - ay, tx - ax);
 
-    const distLocal = Math.hypot(TORCH_LANDMARKS.lensX - TORCH_LANDMARKS.pivotX, TORCH_LANDMARKS.lensY - TORCH_LANDMARKS.pivotY);
-    const baseAngle = Math.atan2(TORCH_LANDMARKS.lensY - TORCH_LANDMARKS.pivotY, TORCH_LANDMARKS.lensX - TORCH_LANDMARKS.pivotX);
-    const rot = aim - baseAngle;
-    /* the lens must stop short of the crosshair; on a squarish window the
-       full-length barrel overshoots it and the cone opens behind the player */
-    const dist = Math.min(distLocal * scale, Math.hypot(tx - ax, ty - ay) * 0.86);
-    const lx = ax + Math.cos(aim) * dist;
-    const ly = ay + Math.sin(aim) * dist;
+    // Flashlight barrel in sprite has exact angle TORCH_LANDMARKS.barrelAngle (-158.79 deg).
+    // Setting rot = aim - TORCH_LANDMARKS.barrelAngle guarantees the barrel points EXACTLY at (tx, ty)!
+    const rot = aim - TORCH_LANDMARKS.barrelAngle;
+
+    // Forward kinematics: exact physical screen-space position of the flashlight lens:
+    const rx = (TORCH_LANDMARKS.lensX - TORCH_LANDMARKS.gripX) * scale;
+    const ry = (TORCH_LANDMARKS.lensY - TORCH_LANDMARKS.gripY) * scale;
+    const lx = ax + (rx * Math.cos(rot) - ry * Math.sin(rot));
+    const ly = ay + (rx * Math.sin(rot) + ry * Math.cos(rot));
+
+    // True forward vector from the flashlight lens directly to the crosshair:
+    const bx = tx - lx;
+    const by = ty - ly;
+    const beamLen = Math.hypot(bx, by) || 1;
+    const fwdX = bx / beamLen;
+    const fwdY = by / beamLen;
+    const normX = -fwdY;
+    const normY = fwdX;
 
     if (beam > 0.03) {
-      const dx = tx - lx;
-      const dy = ty - ly;
-      const len = Math.hypot(dx, dy) || 1;
-      const nx = -dy / len;
-      const ny = dx / len;
-      const spread = vh * 0.44;
-
       c.save();
       c.globalCompositeOperation = 'lighter';
 
-      /* Volumetric beam casting into the darkness */
-      const g = c.createLinearGradient(lx, ly, tx, ty);
+      const rStart = 32 * scale; // aperture size at lens
+      const rEnd = vh * 0.26;    // spotlight cone radius around crosshair
+
+      // Target extent along beam line (penetrates into hallway):
+      const targetDist = beamLen * 1.35;
+      const ex = lx + fwdX * targetDist;
+      const ey = ly + fwdY * targetDist;
+
+      /* Volumetric beam casting forward into the darkness */
+      const g = c.createLinearGradient(lx, ly, ex, ey);
       g.addColorStop(0, `rgba(255, 235, 190, ${(0.22 * beam).toFixed(3)})`);
       g.addColorStop(0.35, `rgba(255, 220, 160, ${(0.10 * beam).toFixed(3)})`);
       g.addColorStop(0.75, `rgba(255, 210, 150, ${(0.03 * beam).toFixed(3)})`);
       g.addColorStop(1, 'rgba(255, 210, 150, 0)');
       c.fillStyle = g;
+
       c.beginPath();
-      const originSpread = 38 * scale;
-      c.moveTo(lx + nx * originSpread, ly + ny * originSpread);
-      c.lineTo(lx - nx * originSpread, ly - ny * originSpread);
-      c.lineTo(tx - nx * spread, ty - ny * spread);
-      c.lineTo(tx + nx * spread, ty + ny * spread);
+      c.moveTo(lx - normX * rStart, ly - normY * rStart);
+      c.lineTo(lx + normX * rStart, ly + normY * rStart);
+      c.lineTo(ex + normX * rEnd, ey + normY * rEnd);
+      c.lineTo(ex - normX * rEnd, ey - normY * rEnd);
       c.closePath();
       c.fill();
 
-      /* Target ambient illumination pool */
-      const pool = c.createRadialGradient(tx, ty, 10, tx, ty, vh * 0.52);
-      pool.addColorStop(0, `rgba(255, 225, 175, ${(0.10 * beam).toFixed(3)})`);
-      pool.addColorStop(1, 'rgba(255, 225, 175, 0)');
+      /* Target ambient illumination pool centered on crosshair */
+      const pool = c.createRadialGradient(tx, ty, 5, tx, ty, rEnd * 1.3);
+      pool.addColorStop(0, `rgba(255, 225, 175, ${(0.12 * beam).toFixed(3)})`);
+      pool.addColorStop(0.5, `rgba(255, 215, 160, ${(0.05 * beam).toFixed(3)})`);
+      pool.addColorStop(1, 'rgba(255, 215, 160, 0)');
       c.fillStyle = pool;
-      c.fillRect(0, 0, vw, vh);
+      c.beginPath();
+      c.arc(tx, ty, rEnd * 1.3, 0, Math.PI * 2);
+      c.fill();
 
-      /* dust motes drifting through the beam */
-      const dirx = dx / len;
-      const diry = dy / len;
+      /* dust motes drifting inside the volumetric beam */
       for (const m of this.motes) {
         m.z -= 0.0016 * (0.6 + m.s);
         if (m.z <= 0.05) {
@@ -1816,10 +1829,11 @@ export class HorrorEngine {
           m.x = Math.random();
           m.y = Math.random();
         }
-        const d = (1 - m.z) * len;
-        const w = (m.x - 0.5) * 2 * spread * (0.25 + 0.75 * (1 - m.z));
-        const px = lx + dirx * d + nx * w;
-        const py = ly + diry * d + ny * w + (m.y - 0.5) * vh * 0.3 * (1 - m.z);
+        const d = (1 - m.z) * targetDist;
+        const curR = rStart + (rEnd - rStart) * (1 - m.z);
+        const offset = (m.x - 0.5) * 2 * curR * 0.85;
+        const px = lx + fwdX * d + normX * offset;
+        const py = ly + fwdY * d + normY * offset;
         const tw = 0.55 + 0.45 * Math.sin(this.time * 3 + m.x * 21);
         const a = Math.max(0, 0.4 * beam * m.z * tw);
         c.fillStyle = `rgba(255, 238, 200, ${(a * 0.6).toFixed(3)})`;
@@ -1838,8 +1852,8 @@ export class HorrorEngine {
     }
     c.drawImage(
       this.torchSprite,
-      -TORCH_LANDMARKS.pivotX * scale,
-      -TORCH_LANDMARKS.pivotY * scale,
+      -TORCH_LANDMARKS.gripX * scale,
+      -TORCH_LANDMARKS.gripY * scale,
       TORCH_W * scale,
       TORCH_H * scale
     );
@@ -1851,44 +1865,50 @@ export class HorrorEngine {
       c.globalCompositeOperation = 'lighter';
 
       // 1. Soft atmospheric halo around the flashlight head
-      const halo = c.createRadialGradient(lx, ly, 10 * scale, lx, ly, vh * 0.16);
+      const halo = c.createRadialGradient(lx, ly, 8 * scale, lx, ly, vh * 0.14);
       halo.addColorStop(0, `rgba(255, 235, 195, ${(0.32 * beam).toFixed(3)})`);
       halo.addColorStop(0.4, `rgba(255, 210, 150, ${(0.12 * beam).toFixed(3)})`);
       halo.addColorStop(1, 'rgba(255, 200, 140, 0)');
       c.fillStyle = halo;
       c.beginPath();
-      c.arc(lx, ly, vh * 0.16, 0, Math.PI * 2);
+      c.arc(lx, ly, vh * 0.14, 0, Math.PI * 2);
       c.fill();
 
       // 2. Reflector dish inner glow matching the bezel opening
-      const reflGlow = c.createRadialGradient(lx, ly, 2 * scale, lx, ly, 38 * scale);
+      const reflGlow = c.createRadialGradient(lx, ly, 2 * scale, lx, ly, 34 * scale);
       reflGlow.addColorStop(0, `rgba(255, 255, 255, ${(0.85 * beam).toFixed(3)})`);
       reflGlow.addColorStop(0.35, `rgba(255, 245, 220, ${(0.65 * beam).toFixed(3)})`);
       reflGlow.addColorStop(0.75, `rgba(255, 215, 140, ${(0.35 * beam).toFixed(3)})`);
       reflGlow.addColorStop(1, 'rgba(255, 200, 120, 0)');
       c.fillStyle = reflGlow;
       c.beginPath();
-      c.arc(lx, ly, 38 * scale, 0, Math.PI * 2);
+      c.arc(lx, ly, 34 * scale, 0, Math.PI * 2);
       c.fill();
 
       // 3. Ultra-bright Cree LED emitter hot core
-      const core = c.createRadialGradient(lx, ly, 0, lx, ly, 14 * scale);
+      const core = c.createRadialGradient(lx, ly, 0, lx, ly, 12 * scale);
       core.addColorStop(0, `rgba(255, 255, 255, ${(0.95 * beam).toFixed(3)})`);
       core.addColorStop(0.5, `rgba(255, 250, 230, ${(0.70 * beam).toFixed(3)})`);
       core.addColorStop(1, 'rgba(255, 240, 200, 0)');
       c.fillStyle = core;
       c.beginPath();
-      c.arc(lx, ly, 14 * scale, 0, Math.PI * 2);
+      c.arc(lx, ly, 12 * scale, 0, Math.PI * 2);
       c.fill();
 
-      // 4. Subtle anamorphic lens glare streak
-      const streak = c.createLinearGradient(lx - 85 * scale, ly, lx + 85 * scale, ly);
+      // 4. Subtle anamorphic lens glare streak aligned with the lens face
+      const flareAngle = aim + Math.PI * 0.5;
+      const streak = c.createLinearGradient(
+        lx - Math.cos(flareAngle) * 75 * scale,
+        ly - Math.sin(flareAngle) * 75 * scale,
+        lx + Math.cos(flareAngle) * 75 * scale,
+        ly + Math.sin(flareAngle) * 75 * scale
+      );
       streak.addColorStop(0, 'rgba(255, 230, 180, 0)');
       streak.addColorStop(0.5, `rgba(255, 245, 225, ${(0.28 * beam).toFixed(3)})`);
       streak.addColorStop(1, 'rgba(255, 230, 180, 0)');
       c.fillStyle = streak;
       c.beginPath();
-      c.ellipse(lx, ly, 85 * scale, 3.5 * scale, -0.32, 0, Math.PI * 2);
+      c.ellipse(lx, ly, 75 * scale, 3.5 * scale, flareAngle, 0, Math.PI * 2);
       c.fill();
 
       c.restore();
